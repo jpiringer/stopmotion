@@ -1,3 +1,7 @@
+$snapHeight: 72px;
+$snapWidth: 128px;
+$scrollbarHeight: 10px;
+
 html {
   background-color: black;
 }
@@ -11,37 +15,35 @@ label {
   background-color: black;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.camMain:focus {
+  outline: 0;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.snap {
+  height: $snapHeight;
+  width: $snapWidth;
+  border: white 1px solid;
+  cursor: pointer;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.snap:hover {
+  border: rgb(255, 238, 0) 2px solid;
+}
+
+.selectedSnap, .selectedSnap:hover {
+  border: rgb(255, 128, 0)2px solid;
+}
+
+.takeSnap:hover {
+  border: white 1px solid;
+}
+
+.reel {
+  color: darkgray;
+  background-color: #303030;
+  height: $snapHeight;
+  width: 100%;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  overflow-x: scroll;
+  overflow-y: hidden;
 }

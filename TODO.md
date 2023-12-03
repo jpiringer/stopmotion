@@ -2,36 +2,62 @@
 
 playback frames
 
-scroll frames
+settings:
 
-rotieren
-
-spiegeln
+- rotate
+- mirror
+- camer
+- frame rate
+- canvas size
 
 export video
 
-delete selected frame
-
-kamera auswahl:
-https://www.npmjs.com/package/react-webcam
-
 save video
-
 load video
 
-state persistence bei reload
+state persistence at reload:
 
-dialog bei clear / new
+- settings
+- frames?
+- project name
 
-snap bei enter
-play bei space
+canvas size select:
 
-# DONE
+- 1920x1080
+- 1280x720
 
-mehrere frames capture
+dialog for gif export:
+
+- name
+- size
+- frame rate
+
+dialog for video export
+
+- name
+- size
+- frame rate
+
+## DONE
+
+capture frames
 
 export gif
 
 delete last frame
 
 clear project / new
+
+snap at pressing enter
+play at pressing space
+
+delete selected frame
+
+dialog for clear / new
+
+kamera select:
+<https://www.npmjs.com/package/react-webcam>
+
+scroll frames
+
+update camera list

@@ -2,8 +2,6 @@ import React, { Component } from 'react';
 import './App.scss';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
-import Button from 'react-bootstrap/Button';
-
 
 import SnapCam from "./SnapCam";
 
