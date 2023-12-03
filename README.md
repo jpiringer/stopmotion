@@ -1,4 +1,19 @@
-# Getting Started with Create React App
+# stop motion experiment
+
+this is an experiment.
+i want to create a stop motion app with react and typescript.
+it will have very basic functionality:
+- snap frames
+- rotate & mirror the camera
+- delete some frames
+- play back the sequence
+- export to gif
+- export to a video file
+- save and load projects
+
+some of it is implemented already, but most of it isn't at the moment.
+
+## React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
