@@ -2,23 +2,25 @@
 
 export video
 
-- as mpeg
-- size?
+- make it better: accurate timing
 
 project
 
-- save
-- load 
+- name
+- new
+- select project
+- delete project
+- autoreload last project
+- export project
+- import project
+- backup all projects
 
 state persistence at reload:
 
 - frames?
-- project name
+- projects
 
 settings icon in the upper left corner
-
-to the beginning of the timeline
-to the end of the timeline
 
 ## DONE
 
@@ -64,3 +66,13 @@ playback frames
 implement rotate
 
 - settings
+
+to the beginning of the timeline
+to the end of the timeline
+
+framecounter
+
+export video
+
+- as mpeg
+- size?

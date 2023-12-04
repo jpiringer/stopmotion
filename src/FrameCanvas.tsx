@@ -1,7 +1,6 @@
 import React, { useRef, useEffect } from 'react'
 
-const FrameCanvas = props => {
-  
+const FrameCanvas = props => { 
   const { draw, frameRate, ...rest } = props
   const canvasRef = useRef(null)
   
@@ -41,9 +40,9 @@ const FrameCanvas = props => {
     return () => {
       window.cancelAnimationFrame(animationFrameId)
     }
-  }, [draw])
+  }, [draw, frameRate])
   
-  return <canvas ref={canvasRef} {...rest}/>
+  return <canvas id="canvas" ref={canvasRef} {...rest}/>
 }
 
 export default FrameCanvas

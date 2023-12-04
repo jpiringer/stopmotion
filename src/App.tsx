@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 
-import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.scss';
 
 import SnapCam from "./SnapCam";
@@ -12,13 +11,6 @@ interface AppState {
 }
 
 export class App extends Component<AppProps, AppState> {
-  constructor(props: AppProps) {
-    super(props);
-
-  }
-
-  
-
   render() {
     return (
       <div className="App">

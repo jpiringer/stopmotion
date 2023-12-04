@@ -10,8 +10,8 @@ import ProgressBar from 'react-bootstrap/ProgressBar';
 
 import FrameCanvas from "./FrameCanvas";
 
-//import Jimp from "jimp";
-//import Jimp from 'jimp/browser/lib/jimp.js';
+import exportVideo from "./exportVideo";
+
 import { Jimp as JimpType, JimpConstructors } from '@jimp/core';
 import 'jimp';
 
@@ -51,6 +51,7 @@ interface SnapState {
   exportType: ExportType
   exportFileName: string
   playing: boolean
+  projectName: string
 }
  
 interface SnapProps {
@@ -74,23 +75,12 @@ export class SnapCam extends Component<SnapProps, SnapState> {
     return JSON.parse(storedValue);
   }
 
-  /*initLocalStorage() {
-    this.setLocalStorage("mirror", false);
-    this.setLocalStorage("rotate", false);
-  }*/
-
   constructor(props: SnapProps) {
     super(props);
 
     this.camRef = React.createRef();
     this.mainDivRef = React.createRef();
     this.canvasRef = React.createRef();
-
-    /*var storedSettings = localStorage.getItem("settings");
-
-    if (storedSettings === undefined || storedSettings === null) {
-        this.initLocalStorage();
-    }*/
 
     let sizeIndex = this.getLocalStorage<number>("sizeIndex", 0)
 
@@ -108,6 +98,7 @@ export class SnapCam extends Component<SnapProps, SnapState> {
       rotate: this.getLocalStorage<boolean>("rotate", false),
       exportType: "GIF",
       exportFileName: "export",
+      projectName: this.getLocalStorage<string>("projectName", "untitled")
     };
 
     this.snap = this.snap.bind(this);
@@ -195,11 +186,13 @@ export class SnapCam extends Component<SnapProps, SnapState> {
       }
 
       this.deselectFrame();
+      this.skipEnd();
     }
   }
 
   setProgress(progress: number) {
-    this.setState({progress: progress*10});
+    let prog = Math.trunc(progress * 10) / 10;
+    this.setState({progress: prog});
     //console.log(`progress: ${progress}`);
   }
 
@@ -226,7 +219,7 @@ export class SnapCam extends Component<SnapProps, SnapState> {
   }
 
   exportVideo(fileName: string) {
-
+    exportVideo(this.state.snaps, this.state.frameRate, this.state.snapWidth, this.state.snapHeight, (e: number) => this.setProgress(e * 100));
   }
 
   doExport() {
@@ -297,6 +290,22 @@ export class SnapCam extends Component<SnapProps, SnapState> {
 
   play() {
     this.setState({playing: !this.state.playing});
+  }
+
+  skipEnd() {
+    const element = document.getElementById("reel");
+
+    if (element !== null) {
+      element.scrollLeft = element.scrollWidth;
+    }
+  }
+
+  skipStart() {
+    const element = document.getElementById("reel");
+
+    if (element !== null) {
+      element.scrollLeft = -element.scrollWidth;
+    }
   }
 
   noModals() {
@@ -522,31 +531,47 @@ export class SnapCam extends Component<SnapProps, SnapState> {
       <div className="camMain" tabIndex={0} onKeyDown={this.keyDown} ref={this.mainDivRef}>
         { this.settings() }
         <br />
+        <div className="projectTitle">{ this.state.projectName }</div>
         { this.frame() }
         <br />
-        <Button variant="primary" onClick={this.snap}>Snap</Button>{' '}
-        <Button variant="danger" onClick={this.deleteLast} disabled={!this.hasContent()}>Delete Last</Button>{' '}
-        <Button variant="danger" onClick={this.deleteSelected} disabled={!this.isSelected()}>Delete Selected</Button>
+        <Button variant="outline-primary" onClick={this.snap}><i className="bi bi-camera"></i></Button>{' '}
+        <Button variant="outline-danger" onClick={this.deleteLast} disabled={!this.hasContent()}><i className="bi bi-backspace"></i></Button>{' '}
+        <Button variant="outline-danger" onClick={this.deleteSelected} disabled={!this.isSelected()}>Delete Selected</Button>
         <br />
         <br />
-        <Button variant="success" onClick={this.play} disabled={!this.hasContent()}>{this.state.playing ? "Stop" : "Play"}</Button>{' '}
-        <br />
-        <Button variant="success" onClick={this.showExport} disabled={!this.hasContent()}>Export</Button>{' '}
-        <Button variant="primary" onClick={this.showSettings}>Settings</Button>{' '}
-        <Button variant="danger" onClick={this.clear} disabled={!this.hasContent()}>Clear</Button>
+        <Button variant="outline-success" onClick={this.skipStart} disabled={!this.hasContent()}><i className="bi bi-skip-start"></i></Button>{' '}
+        <Button variant="outline-success" onClick={this.play} disabled={!this.hasContent()}>{this.state.playing ? <i className="bi bi-stop"></i> : <i className="bi bi-play"></i>}</Button>{' '}
+        <Button variant="outline-success" onClick={this.skipEnd} disabled={!this.hasContent()}><i className="bi bi-skip-end"></i></Button>
         <br />
         <br />
-        <div className="reel">
+        <Button variant="outline-success" onClick={this.showExport}><i className="bi bi-plus-lg"></i></Button>{' '}
+        <Button variant="outline-success" onClick={this.showExport} disabled={!this.hasContent()}><i className="bi bi-box-arrow-down"></i></Button>{' '}
+        <Button variant="outline-primary" onClick={this.showSettings}><i className="bi bi-gear"></i></Button>{' '}
+        <Button variant="outline-danger" onClick={this.clear} disabled={!this.hasContent()}><i className="bi bi-trash3"></i></Button>
+        <br />
+        <br />
+        <div className="reel" id="reel">
+          <div className="reelStart">{' '}</div>
           {this.state.snaps.map((source: string, index: number) => {
-            return <img src={source} className={this.state.selectedFrameIndex === index ? "snap selectedSnap" : "snap"} alt="captured" key={"snap"+index} id={"snap"+index} onClick={this.selectFrame(index)}/>;
+            return <div>
+              <div className="frameNumber">
+                {index+1}
+              </div>
+              <img src={source} className={(this.state.selectedFrameIndex === index ? "snap selectedSnap" : "snap")} alt="captured" key={"snap"+index} id={"snap"+index} onClick={this.selectFrame(index)}/>
+            </div>;
           }
           )}
           
-          <div className="snap takeSnap" alt={"&#xF220;"} key={"empty"} id={"empty"} onClick={this.snap}>
-            <svg xmlns="http://www.w3.org/2000/svg" height="100%" fill="currentColor" className="bi bi-camera" viewBox="0 0 16 16">
-              <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z"/>
-              <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
-            </svg>
+          <div>
+            <div className="frameNumber">
+              
+            </div>
+            <div className="snap takeSnap" alt={"&#xF220;"} key={"empty"} id={"empty"} onClick={this.snap}>
+              <svg xmlns="http://www.w3.org/2000/svg" height="100%" fill="currentColor" className="bi bi-camera" viewBox="0 0 16 16">
+                <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z"/>
+                <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
+              </svg>
+            </div>
           </div>
         </div>
         { this.modal() }

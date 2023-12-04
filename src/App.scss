@@ -1,6 +1,15 @@
-$snapHeight: 48px;
+@import "bootstrap/scss/bootstrap.scss";
+@import "bootstrap-icons/font/bootstrap-icons.scss";
+
 $snapWidth: 85px;
+$snapHeight: 48px;
 $scrollbarHeight: 10px;
+$reelframenumberheight: 15px;
+$reelheight: $snapHeight+$reelframenumberheight;
+
+$reelstartwidth: 10px;
+$reelstartheight: $snapHeight;
+$reelstartborderwidth: 5.8px;
 
 html {
   background-color: black;
@@ -37,17 +46,32 @@ video {
 }
 
 .selectedSnap, .selectedSnap:hover {
-  border: rgb(255, 128, 0)2px solid;
+  border: rgb(255, 128, 0) 2px solid;
 }
 
 .takeSnap:hover {
   border: white 1px solid;
 }
 
+.reelStart {
+  border-right: black $reelstartborderwidth dotted;
+  background-color: darkgray;
+  min-width: $reelstartwidth;
+  height: $reelheight;
+  display: inline-flex;
+}
+
+.frameNumber {
+  background-color: black;
+  border-left: white 1px solid;
+  font-size: 8px;
+  height: $reelframenumberheight;
+}
+
 .reel {
   color: darkgray;
   background-color: #303030;
-  height: $snapHeight;
+  height: $reelheight;
   width: 100%;
   display: flex;
   overflow-x: scroll;
@@ -67,4 +91,8 @@ video {
 .blackmodal {
   background-color: #303030;
   color: white;
+}
+
+.projectTitle {
+  font-size: 20px;
 }
