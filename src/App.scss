@@ -1,18 +1,24 @@
-$snapHeight: 72px;
-$snapWidth: 128px;
+$snapHeight: 48px;
+$snapWidth: 85px;
 $scrollbarHeight: 10px;
 
 html {
   background-color: black;
+  color: white;
 }
 
 label {
   color: white;
 }
 
+video {
+  background-color: green;
+}
+
 .App {
   text-align: center;
   background-color: black;
+  color: white;
 }
 
 .camMain:focus {
@@ -46,4 +52,19 @@ label {
   display: flex;
   overflow-x: scroll;
   overflow-y: hidden;
+}
+
+.offcanvas-body {
+  background-color: #303030;
+  color: white;
+}
+
+.offcanvas-header {
+  background-color: #303030;
+  color: white;
+}
+
+.blackmodal {
+  background-color: #303030;
+  color: white;
 }

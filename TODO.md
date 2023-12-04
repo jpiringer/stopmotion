@@ -1,42 +1,24 @@
 # TODO
 
-playback frames
-
-settings:
-
-- rotate
-- mirror
-- camer
-- frame rate
-- canvas size
-
 export video
 
-save video
-load video
+- as mpeg
+- size?
+
+project
+
+- save
+- load 
 
 state persistence at reload:
 
-- settings
 - frames?
 - project name
 
-canvas size select:
+settings icon in the upper left corner
 
-- 1920x1080
-- 1280x720
-
-dialog for gif export:
-
-- name
-- size
-- frame rate
-
-dialog for video export
-
-- name
-- size
-- frame rate
+to the beginning of the timeline
+to the end of the timeline
 
 ## DONE
 
@@ -61,3 +43,24 @@ kamera select:
 scroll frames
 
 update camera list
+
+settings:
+
+- frame rate
+- camera
+
+- rotate
+- mirror
+- canvas size
+
+canvas size select:
+
+- 1920x1080
+- 1280x720
+- name
+
+playback frames
+
+implement rotate
+
+- settings
