@@ -1,9 +1,5 @@
 # TODO
 
-export video
-
-- make it better: accurate timing
-
 project
 
 - name
@@ -21,6 +17,10 @@ state persistence at reload:
 - projects
 
 settings icon in the upper left corner
+
+export video
+
+- make it better: accurate timing
 
 ## DONE
 
