@@ -17,6 +17,8 @@ function generateTitle() {
 }
 
 export class Project {
+	public id: string = crypto.randomUUID()
+
 	protected title: string
 	protected frameRate: number
 	protected size: FrameSize

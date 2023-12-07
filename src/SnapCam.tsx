@@ -1,21 +1,23 @@
-import Webcam from "react-webcam";
-import React, { Component, MouseEventHandler, ChangeEvent } from 'react';
-import { Alert, Col, Form, ListGroup } from 'react-bootstrap';
-import { createGIF } from 'gifshot';
+import Webcam from "react-webcam"
+import React, { Component, MouseEventHandler, MouseEvent, ChangeEvent } from 'react'
+import { Alert, Col, Form, ListGroup } from 'react-bootstrap'
+import { createGIF } from 'gifshot'
 
-import Button from 'react-bootstrap/Button';
-import Modal from 'react-bootstrap/Modal';
-import Offcanvas from 'react-bootstrap/Offcanvas';
-import ProgressBar from 'react-bootstrap/ProgressBar';
+import Button from 'react-bootstrap/Button'
+import Modal from 'react-bootstrap/Modal'
+import Offcanvas from 'react-bootstrap/Offcanvas'
+import ProgressBar from 'react-bootstrap/ProgressBar'
 
-import { Project, FrameSize } from "./Project";
+import { Project, FrameSize } from "./Project"
 
-import FrameCanvas from "./FrameCanvas";
+import FrameCanvas from "./FrameCanvas"
+import Database from "./Database"
 
-import exportVideo from "./exportVideo";
+import exportVideo from "./exportVideo"
 
-import { Jimp as JimpType, JimpConstructors } from '@jimp/core';
-import 'jimp';
+import { Jimp as JimpType, JimpConstructors } from '@jimp/core'
+import 'jimp'
+//import Jimp from "jimp";
 
 declare const Jimp: JimpType & JimpConstructors;
 
@@ -205,11 +207,7 @@ export class SnapCam extends Component<SnapProps, SnapState> {
       .getBase64(Jimp.MIME_JPEG, function (err, src: string) {
         func(src);
       });
-    })
-    /*.catch((err) => {
-      // Handle an exception.
-      console.log("error: "+err)
-    });*/    
+    })  
   }
 
   snap() {
@@ -286,7 +284,8 @@ export class SnapCam extends Component<SnapProps, SnapState> {
   isSelected() {
     return this.state.selectedFrameIndex >= 0;
   }
-  selectFrame = (index: number) => (e: MouseEventHandler<HTMLImageElement>) => {  
+
+  selectFrame = (index: number) => (event: MouseEvent<HTMLImageElement>) => {  
     if (this.state.selectedFrameIndex === index) {
       this.deselectFrame();
     }
@@ -477,7 +476,7 @@ export class SnapCam extends Component<SnapProps, SnapState> {
     this.setState({rotate: newValue});
   }
 
-  onProjectNameChange(event: ChangeEvent<FormControlElement>) {
+  onProjectNameChange(event: ChangeEvent<HTMLInputElement>) {
     this.getCurrentProject().setTitle(event.target.value);
   }
 
@@ -602,7 +601,7 @@ export class SnapCam extends Component<SnapProps, SnapState> {
     this.setState({exportType: event.target.value as ExportType});
   }
 
-  onExportFileNameChange(event: ChangeEvent<FormControlElement>) {
+  onExportFileNameChange(event: ChangeEvent<HTMLInputElement>) {
     this.setState({exportFileName: event.target.value});
   }
 
@@ -702,7 +701,7 @@ export class SnapCam extends Component<SnapProps, SnapState> {
               <div className="frameNumber">
                 
               </div>
-              <div className="snap takeSnap" alt={"&#xF220;"} key={"empty"} id={"empty"} onClick={this.snap}>
+              <div className="snap takeSnap" key={"empty"} id={"empty"} onClick={this.snap}>
                 <svg xmlns="http://www.w3.org/2000/svg" height="100%" fill="currentColor" className="bi bi-camera" viewBox="0 0 16 16">
                   <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z"/>
                   <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
