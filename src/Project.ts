@@ -39,6 +39,9 @@ export class Project {
 
 	clone() {
 		var newProject = new Project(this.updater, this.frameRate, this.size, this.mirror, this.rotate)
+
+		newProject.title = this.title
+		newProject.frames = this.frames
 		
 		return newProject
 	}
@@ -48,6 +51,14 @@ export class Project {
 	}
 
 	store() {
+
+	}
+
+	activate() {
+
+	}
+
+	deactivate() {
 
 	}
 
@@ -84,10 +95,38 @@ export class Project {
 		return this.size
 	}
 
+	// mirror & rotate
+
+	setMirror(mirror: boolean) {
+		this.mirror = mirror
+		this.updateState()
+	}
+
+	getMirror() {
+		return this.mirror
+	}
+
+	setRotate(rotate: boolean) {
+		this.rotate = rotate
+		this.updateState()
+	}
+
+	getRotate() {
+		return this.rotate
+	}
+
 	// frames
+
+	hasContent() {
+		return this.frames.length > 0;
+	}
 
 	getFrames() {
 		return this.frames
+	}
+
+	getFrame(nr: number) {
+		return this.frames[nr]
 	}
 
 	addFrame(frame: string) {
@@ -100,7 +139,7 @@ export class Project {
 		this.updateState()
 	}
 
-	deleteFrameNr(nr: number) {
+	deleteFrame(nr: number) {
 		this.frames.splice(nr, 1);
 		this.updateState()
 	}

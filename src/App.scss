@@ -93,6 +93,23 @@ video {
   color: white;
 }
 
+.heading {
+  clear: both;
+}
+
 .projectTitle {
   font-size: 20px;
+  padding: 10px;
+  display: inline-block;
+}
+
+.noborder-button {
+  border: 0px;
+}
+
+.inline-project-button {
+  float: right;
+  border: 0px;
+  color: red;
+  background-color: white;
 }

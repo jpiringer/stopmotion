@@ -1,6 +1,6 @@
 import Webcam from "react-webcam";
 import React, { Component, MouseEventHandler, ChangeEvent } from 'react';
-import { Form, FormControlElement } from 'react-bootstrap';
+import { Alert, Col, Form, ListGroup } from 'react-bootstrap';
 import { createGIF } from 'gifshot';
 
 import Button from 'react-bootstrap/Button';
@@ -31,24 +31,23 @@ const possibleSizes = [
 ];
 
 interface SnapState {
-  snaps: string[]
   progress: number
   selectedFrameIndex: number
-  showClearModal: boolean
+  showClearAlert: boolean
   showSettings: boolean
   showExport: boolean
+  showProjectManager: boolean
   inputDevices: MediaDeviceInfo[]
   selectedDeviceID: string
   frameRate: number
   sizeIndex: number
-  snapWidth: number
-  snapHeight: number
   mirror: boolean
   rotate: boolean
   exportType: ExportType
   exportFileName: string
   playing: boolean
   projects: Project[]
+  selectedProjectNr: number
   currentProjectNr: number
 }
  
@@ -85,11 +84,16 @@ export class SnapCam extends Component<SnapProps, SnapState> {
     this.setState({projects: projects})
   }
 
+  createNewProject() {
+    return new Project(() => {this.updateProject()}, this.state.frameRate, possibleSizes[this.state.sizeIndex], this.state.mirror, this.state.rotate)
+  }
+
   makeNewProject() {
     var projects = this.state.projects
-    var newProject = new Project(this.updateProject, this.state.frameRate, possibleSizes[this.state.sizeIndex], this.state.mirror, this.state.rotate)
+    var newProject = this.createNewProject()
 
     projects.push(newProject)
+    newProject.activate()
 
     this.setState({projects: projects, currentProjectNr: projects.length-1})
   }
@@ -111,20 +115,18 @@ export class SnapCam extends Component<SnapProps, SnapState> {
     this.state = {
       playing: false,
       progress: 0, 
-      snaps: [], 
       selectedFrameIndex: -1, 
-      showClearModal: false, showSettings: false, showExport: false,
+      showClearAlert: true, showSettings: false, showExport: false, showProjectManager: false,
       inputDevices: [], 
       selectedDeviceID: this.getLocalStorage<string>("selectedDeviceID", ""),
       frameRate: frameRate, 
       sizeIndex: sizeIndex,
-      snapWidth: size.width,
-      snapHeight: size.height,
       mirror: mirror,
       rotate: rotate,
       exportType: "GIF",
       exportFileName: "export",
-      projects: [new Project(this.updateProject, frameRate, size, mirror, rotate)],
+      projects: [new Project(() => {this.updateProject()}, frameRate, size, mirror, rotate)],
+      selectedProjectNr: -1,
       currentProjectNr: 0
     };
 
@@ -135,11 +137,11 @@ export class SnapCam extends Component<SnapProps, SnapState> {
     this.deleteLast = this.deleteLast.bind(this);
     this.deleteSelected = this.deleteSelected.bind(this);
     this.clear = this.clear.bind(this);
-    this.reallyClear = this.reallyClear.bind(this);
     this.keyDown = this.keyDown.bind(this);
     this.play = this.play.bind(this);
     this.selectFrame = this.selectFrame.bind(this);
-    this.handleCloseModal = this.handleCloseModal.bind(this);
+    this.hideClearAlert = this.hideClearAlert.bind(this);
+    this.showClearAlert = this.showClearAlert.bind(this);
     this.changeDevice = this.changeDevice.bind(this);
     this.changeFrameRate = this.changeFrameRate.bind(this);
     this.showSettings = this.showSettings.bind(this);
@@ -152,8 +154,20 @@ export class SnapCam extends Component<SnapProps, SnapState> {
     this.drawFrame = this.drawFrame.bind(this);
     this.handleBeforeUnload = this.handleBeforeUnload.bind(this);
     this.makeNewProject = this.makeNewProject.bind(this);
+    this.makeNewProject = this.makeNewProject.bind(this);
+    this.onProjectNameChange = this.onProjectNameChange.bind(this);
+    this.showProjectManager = this.showProjectManager.bind(this);
+    this.hideProjectManager = this.hideProjectManager.bind(this);
 
     window.addEventListener("beforeunload", this.handleBeforeUnload);
+  }
+
+  getFrames() {
+    return this.getCurrentProject().getFrames()
+  }
+
+  getFrame(nr: number) {
+    return this.getCurrentProject().getFrame(nr)
   }
 
   handleBeforeUnload(event: Event) {
@@ -200,19 +214,14 @@ export class SnapCam extends Component<SnapProps, SnapState> {
 
   snap() {
     if (this.camRef.current !== null) {
-      const dimension = {width: this.state.snapWidth, height: this.state.snapHeight}
+      const dimension = {width: this.getCurrentProject().getSize().width, height: this.getCurrentProject().getSize().height}
       const captured = this.camRef.current.getScreenshot(dimension);
       let storeImage = (img: string) => {
-        if (this.state.snaps === null) {
-          this.setState({snaps: [img]});
-        }
-        else {
-          this.setState({snaps: this.state.snaps.concat([img])});
-        }
+        this.getCurrentProject().addFrame(img);
       }
 
       if (captured !== null) {
-        if (this.state.rotate) {
+        if (this.getCurrentProject().getRotate()) {
           this.rotate(captured, 180, storeImage);
         }
         else {
@@ -237,11 +246,11 @@ export class SnapCam extends Component<SnapProps, SnapState> {
 
   exportGIF(fileName: string) {
     const options = {
-      images: this.state.snaps,
+      images: this.getFrames(),
       gifWidth: 500,
       gifHeight: 300,
       numWorkers: 5,
-      frameDuration: 10 / this.state.frameRate,
+      frameDuration: 10 / this.getCurrentProject().getFramerate(),
       sampleInterval: 10,
       progressCallback: (e: number) => this.setProgress(e * 100)
     };
@@ -258,7 +267,7 @@ export class SnapCam extends Component<SnapProps, SnapState> {
   }
 
   exportVideo(fileName: string) {
-    exportVideo(this.state.snaps, this.state.frameRate, this.state.snapWidth, this.state.snapHeight, (e: number) => this.setProgress(e * 100));
+    exportVideo(this.getFrames(), this.getCurrentProject().getFramerate(), this.getCurrentProject().getSize().width, this.getCurrentProject().getSize().height, (e: number) => this.setProgress(e * 100));
   }
 
   doExport() {
@@ -288,42 +297,34 @@ export class SnapCam extends Component<SnapProps, SnapState> {
 
   changeSelected(inc: number) {
     if (this.hasContent()) {
-      let newIndex = this.isSelected() ? this.state.selectedFrameIndex + inc : this.state.snaps.length-1;
+      let newIndex = this.isSelected() ? this.state.selectedFrameIndex + inc : this.getFrames().length-1;
 
       if (newIndex < 0) {
         newIndex = 0;
       }
-      if (newIndex >= this.state.snaps.length) {
-        newIndex = this.state.snaps.length-1;
+      if (newIndex >= this.getFrames().length) {
+        newIndex = this.getFrames().length-1;
       }
       this.setState({selectedFrameIndex: newIndex});
     }
   }
 
   deleteLast() {
-    this.setState({snaps: this.state.snaps.slice(0, -1)});
+    this.getCurrentProject().deleteLastFrame();
     this.deselectFrame();
   }
 
   deleteSelected() {
-    var changedArray = this.state.snaps;
-    changedArray.splice(this.state.selectedFrameIndex, 1);
-
-    this.setState({snaps: changedArray});
+    this.getCurrentProject().deleteFrame(this.state.selectedFrameIndex);
     this.deselectFrame();
   }
 
   hasContent() {
-    return this.state.snaps.length > 0;
+    return this.getCurrentProject().hasContent();
   }
 
   clear() {
-    this.setState({showClearModal: true});
-  }
-
-  reallyClear() {
-    this.setState({snaps: []});
-    this.handleCloseModal();
+    this.setState({showClearAlert: true});
   }
 
   play() {
@@ -347,7 +348,7 @@ export class SnapCam extends Component<SnapProps, SnapState> {
   }
 
   noModals() {
-    return !(this.state.showClearModal || this.state.showExport || this.state.showSettings);
+    return !(this.state.showProjectManager || this.state.showExport || this.state.showSettings);
   }
 
   keyDown(e: { key: string; code: string; }) {
@@ -378,8 +379,12 @@ export class SnapCam extends Component<SnapProps, SnapState> {
     }
   }
 
-  handleCloseModal() {
-    this.setState({showClearModal: false});
+  hideClearAlert() {
+    this.setState({showClearAlert: false});
+  }
+
+  showClearAlert() {
+    this.setState({showClearAlert: true});
   }
 
   handleCloseSettings() {
@@ -408,14 +413,15 @@ export class SnapCam extends Component<SnapProps, SnapState> {
   }
 
   changeFrameRate(event: ChangeEvent<HTMLSelectElement>) {
-    let frameRate = parseInt(event.target.value);
-    this.setLocalStorage("frameRate", frameRate);
-    this.setState({frameRate: frameRate});
+    let frameRate = parseInt(event.target.value)
+    this.getCurrentProject().setFrameRate(frameRate)
+    this.setLocalStorage("frameRate", frameRate)
+    this.setState({frameRate: frameRate})
   }
 
   frameRateSelector() {
     return (
-      <Form.Select aria-label="select frame rate" value={this.state.frameRate} onChange={this.changeFrameRate}>
+      <Form.Select aria-label="select frame rate" value={this.getCurrentProject().getFramerate()} onChange={this.changeFrameRate}>
         {possibleFrameRates.map((frameRate: number) => {
           return <option value={frameRate} key= {frameRate}>{frameRate}</option>
         })}
@@ -425,13 +431,30 @@ export class SnapCam extends Component<SnapProps, SnapState> {
 
   changeSize(event: ChangeEvent<HTMLSelectElement>) {
     let sizeIndex = parseInt(event.target.value);
+
+    let width = possibleSizes[sizeIndex].width
+    let height = possibleSizes[sizeIndex].height
+
+    this.getCurrentProject().setSize({width: width, height: height})
     this.setLocalStorage("sizeIndex", sizeIndex);
-    this.setState({sizeIndex: sizeIndex, snapWidth: possibleSizes[sizeIndex].width, snapHeight: possibleSizes[sizeIndex].height});
+    this.setState({sizeIndex: sizeIndex});
+  }
+
+  getSizeIndex() {
+    let size = this.getCurrentProject().getSize()
+
+    for (let [index, sz] of Object.entries(possibleSizes)) {
+      if (sz.width === size.width) {
+        return index
+      }
+    }
+
+    return 0
   }
 
   sizeSelector() {
     return (
-      <Form.Select aria-label="select frame rate" value={this.state.sizeIndex} onChange={this.changeSize}>
+      <Form.Select aria-label="select frame rate" value={this.getSizeIndex()} onChange={this.changeSize}>
         {possibleSizes.map((size: FrameSize, index: number) => {
           let sizeLabel = size.width+"x"+size.height;
           return <option value={index} key={sizeLabel}>{sizeLabel}</option>
@@ -442,14 +465,20 @@ export class SnapCam extends Component<SnapProps, SnapState> {
 
   changeMirror() {
     let newValue = !this.state.mirror
+    this.getCurrentProject().setMirror(newValue)
     this.setLocalStorage("mirror", newValue);
     this.setState({mirror: newValue});
   }
 
   changeRotate() {
     let newValue = !this.state.rotate;
+    this.getCurrentProject().setRotate(newValue)
     this.setLocalStorage("rotate", newValue);
     this.setState({rotate: newValue});
+  }
+
+  onProjectNameChange(event: ChangeEvent<FormControlElement>) {
+    this.getCurrentProject().setTitle(event.target.value);
   }
 
   settings() {
@@ -459,6 +488,10 @@ export class SnapCam extends Component<SnapProps, SnapState> {
         <Offcanvas.Title>Settings</Offcanvas.Title>
       </Offcanvas.Header>
       <Offcanvas.Body>
+        <Form.Group className="mb-3" controlId="exampleForm.ControlInput1">
+          <Form.Label>Project title:</Form.Label>
+          <Form.Control type="input" placeholder="project title" value={this.getCurrentProject().getTitle()} onChange={this.onProjectNameChange}/>
+        </Form.Group>
         Choose camera:
         { this.deviceSelector() }
         Frame rate:
@@ -466,30 +499,95 @@ export class SnapCam extends Component<SnapProps, SnapState> {
         Size:
         { this.sizeSelector() }
 
-        <Form.Check type="checkbox" id="mirror" label="Mirror" checked={this.state.mirror} onChange={this.changeMirror}/>
-        <Form.Check type="checkbox" id="rotate" label="Rotate 180°" checked={this.state.rotate} onChange={this.changeRotate} />
+        <Form.Check type="checkbox" id="mirror" label="Mirror" checked={this.getCurrentProject().getMirror()} onChange={this.changeMirror}/>
+        <Form.Check type="checkbox" id="rotate" label="Rotate 180°" checked={this.getCurrentProject().getRotate()} onChange={this.changeRotate} />
 
       </Offcanvas.Body>
     </Offcanvas>
     );
   }
 
-  modal() {
+  openProject() {
+    this.setState({currentProjectNr: this.state.selectedProjectNr});
+    this.hideProjectManager();
+  }
+
+  deleteProject(nr: number) {
+    console.log("delete: "+this.state.projects[nr].getTitle())
+    var current = this.getCurrentProject()
+    var projects = this.state.projects
+    projects.splice(nr, 1)
+
+    var currentIndex = -1;
+    for (var i = 0; i < projects.length; i++) {
+      if (current === projects[i]) {
+        currentIndex = i
+        break
+      }
+    }
+
+    if (projects.length > 0) {
+      if (currentIndex === -1) {
+        currentIndex = (nr+1) % projects.length
+      }
+    }
+    else {
+      var newProject = this.createNewProject()
+      projects = [newProject]
+      newProject.activate()
+      currentIndex = 0
+    }
+    this.setState({showClearAlert: false, projects: projects, currentProjectNr: currentIndex})
+  }
+
+  projectManager() {
     return (
-    <Modal show={this.state.showClearModal} onHide={this.handleCloseModal} animation={true}>
-      <Modal.Header closeButton className="blackmodal" closeVariant="white">
-        <Modal.Title>Delete All Frames</Modal.Title>
-      </Modal.Header>
-      <Modal.Body className="blackmodal">Do you really want to delete everything?</Modal.Body>
-      <Modal.Footer className="blackmodal">
-        <Button variant="danger" onClick={this.reallyClear}>
-          Delete
-        </Button>
-        <Button variant="primary" onClick={this.handleCloseModal}>
-          Cancel
-        </Button>
-      </Modal.Footer>
-    </Modal>);
+      <Modal show={this.state.showProjectManager} onHide={this.hideProjectManager} animation={true}>
+        <Modal.Header closeButton className="blackmodal" closeVariant="white">
+          <Modal.Title>Project Manager</Modal.Title>
+        </Modal.Header>
+        <ListGroup as="ul">
+          { this.state.projects.map((project: Project, index: number) => {
+              return ((this.state.showClearAlert && this.state.selectedProjectNr === index) ?
+                <Alert show variant="danger">
+                  <Alert.Heading>Delete Project "{project.getTitle()}"?</Alert.Heading>
+                  <p>
+                  Do you really want to delete the project "{project.getTitle()}"? This cannot be undone!
+                  </p>
+                  <hr />
+                  <div className="d-flex justify-content-end">
+                  <Button onClick={() => {this.deleteProject(index)}} variant="outline-danger">Delete Permanently</Button>{' '}
+                  <Button onClick={this.hideClearAlert} variant="outline-success">Cancel</Button>
+                  </div>
+                </Alert>
+                :
+                <ListGroup.Item as="li" action active={this.state.selectedProjectNr === index} onClick={() => {this.setState({selectedProjectNr: index})}} onDoubleClick={() => {this.openProject()}}>
+                  {project.getTitle()} <button className="inline-project-button" onClick={this.showClearAlert}><i className="bi bi-trash3"></i></button>
+                </ListGroup.Item>);
+            })
+          }
+        </ListGroup>
+        
+        <Modal.Footer className="blackmodal">
+            <Col>
+              <Button variant="primary" onClick={() => {this.makeNewProject(); this.hideProjectManager();}}>New Project</Button>
+            </Col>
+            <Col>
+              <Button variant="success" disabled={this.state.selectedProjectNr < 0} onClick={() => {this.openProject()}}>Open Project</Button>{' '}
+              
+              <Button variant="primary" onClick={this.hideProjectManager}>Cancel</Button>
+            </Col>
+        </Modal.Footer>
+      </Modal>
+    )
+  }
+
+  showProjectManager() {
+    this.setState({showProjectManager: true, selectedProjectNr: -1, showClearAlert: false});
+  }
+
+  hideProjectManager() {
+    this.setState({showProjectManager: false, showClearAlert: false});
   }
 
   showExport() {
@@ -542,7 +640,7 @@ export class SnapCam extends Component<SnapProps, SnapState> {
   }
 
   drawFrame(context: CanvasRenderingContext2D, frameCount: number) {
-    let imageSrc = this.state.snaps[frameCount % this.state.snaps.length];
+    let imageSrc = this.getFrame(frameCount % this.getFrames().length);
     var image = new Image();
     image.src = imageSrc;
     context.drawImage(image, 0, 0, context.canvas.width, context.canvas.height);
@@ -551,15 +649,20 @@ export class SnapCam extends Component<SnapProps, SnapState> {
   frame() {
     return (
       this.state.playing ?
-      <FrameCanvas width={this.state.snapWidth*camFactor} height={this.state.snapHeight*camFactor} draw={this.drawFrame} frameRate={this.state.frameRate} />
+      <FrameCanvas 
+        width={this.getCurrentProject().getSize().width*camFactor} 
+        height={this.getCurrentProject().getSize().height*camFactor} 
+        draw={this.drawFrame} 
+        frameRate={this.getCurrentProject().getFramerate()} />
       :
-      <Webcam mirrored={this.state.mirror} 
-        width={this.state.snapWidth*camFactor} height={this.state.snapHeight*camFactor} 
+      <Webcam 
+        mirrored={this.getCurrentProject().getMirror()} 
+        width={this.getCurrentProject().getSize().width*camFactor} height={this.getCurrentProject().getSize().height*camFactor} 
         audio={false} 
         screenshotFormat="image/jpeg" 
-        videoConstraints={ {deviceId: this.state.selectedDeviceID, width: this.state.snapWidth, height: this.state.snapHeight} } 
+        videoConstraints={ {deviceId: this.state.selectedDeviceID, width: this.getCurrentProject().getSize().width, height: this.getCurrentProject().getSize().height} } 
         ref={this.camRef} 
-        style={this.state.rotate ? {transform: "rotate(180deg)"} : {}}
+        style={this.getCurrentProject().getRotate() ? {transform: "rotate(180deg)"} : {}}
         />
     );
   }
@@ -569,51 +672,57 @@ export class SnapCam extends Component<SnapProps, SnapState> {
       <div className="camMain" tabIndex={0} onKeyDown={this.keyDown} ref={this.mainDivRef}>
         { this.settings() }
         <br />
-        <div className="projectTitle">{ this.getCurrentProject().getTitle() }</div>
-        { this.frame() }
+        <div className="heading">
+          <span className="projectTitle">{ this.getCurrentProject().getTitle() }</span>
+          <Button variant="outline-danger" onClick={this.showSettings}><i className="bi bi-gear"></i></Button>{' '}
+        </div>
+        <div>
+          { this.frame() }
+          <br />
+          <Button variant="outline-primary" onClick={this.snap}><i className="bi bi-camera"></i></Button>{' '}
+          <Button variant="outline-danger" onClick={this.deleteLast} disabled={!this.hasContent()}><i className="bi bi-backspace"></i></Button>{' '}
+          <Button variant="outline-danger" onClick={this.deleteSelected} disabled={!this.isSelected()}>Delete Selected</Button>
+          <br />
+        </div>
         <br />
-        <Button variant="outline-primary" onClick={this.snap}><i className="bi bi-camera"></i></Button>{' '}
-        <Button variant="outline-danger" onClick={this.deleteLast} disabled={!this.hasContent()}><i className="bi bi-backspace"></i></Button>{' '}
-        <Button variant="outline-danger" onClick={this.deleteSelected} disabled={!this.isSelected()}>Delete Selected</Button>
-        <br />
-        <br />
-        <Button variant="outline-success" onClick={this.skipStart} disabled={!this.hasContent()}><i className="bi bi-skip-start"></i></Button>{' '}
-        <Button variant="outline-success" onClick={this.play} disabled={!this.hasContent()}>{this.state.playing ? <i className="bi bi-stop"></i> : <i className="bi bi-play"></i>}</Button>{' '}
-        <Button variant="outline-success" onClick={this.skipEnd} disabled={!this.hasContent()}><i className="bi bi-skip-end"></i></Button>
-        <br />
-        <br />
-        <Button variant="outline-success" onClick={this.makeNewProject}><i className="bi bi-plus-lg"></i></Button>{' '}
-        <Button variant="outline-success" onClick={this.showExport} disabled={!this.hasContent()}><i className="bi bi-box-arrow-down"></i></Button>{' '}
-        <Button variant="outline-primary" onClick={this.showSettings}><i className="bi bi-gear"></i></Button>{' '}
-        <Button variant="outline-danger" onClick={this.clear} disabled={!this.hasContent()}><i className="bi bi-trash3"></i></Button>
-        <br />
-        <br />
-        <div className="reel" id="reel">
-          <div className="reelStart">{' '}</div>
-          {this.state.snaps.map((source: string, index: number) => {
-            return <div>
+        <div>
+          <div className="reel" id="reel">
+            <div className="reelStart">{' '}</div>
+            {this.getFrames().map((source: string, index: number) => {
+              return <div>
+                <div className="frameNumber">
+                  {index+1}
+                </div>
+                <img src={source} className={(this.state.selectedFrameIndex === index ? "snap selectedSnap" : "snap")} alt="captured" key={"snap"+index} id={"snap"+index} onClick={this.selectFrame(index)}/>
+              </div>;
+            }
+            )}
+            
+            <div>
               <div className="frameNumber">
-                {index+1}
+                
               </div>
-              <img src={source} className={(this.state.selectedFrameIndex === index ? "snap selectedSnap" : "snap")} alt="captured" key={"snap"+index} id={"snap"+index} onClick={this.selectFrame(index)}/>
-            </div>;
-          }
-          )}
-          
-          <div>
-            <div className="frameNumber">
-              
-            </div>
-            <div className="snap takeSnap" alt={"&#xF220;"} key={"empty"} id={"empty"} onClick={this.snap}>
-              <svg xmlns="http://www.w3.org/2000/svg" height="100%" fill="currentColor" className="bi bi-camera" viewBox="0 0 16 16">
-                <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z"/>
-                <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
-              </svg>
+              <div className="snap takeSnap" alt={"&#xF220;"} key={"empty"} id={"empty"} onClick={this.snap}>
+                <svg xmlns="http://www.w3.org/2000/svg" height="100%" fill="currentColor" className="bi bi-camera" viewBox="0 0 16 16">
+                  <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z"/>
+                  <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
+                </svg>
+              </div>
             </div>
           </div>
+          <br />
+          <Button variant="outline-success" onClick={this.skipStart} disabled={!this.hasContent()}><i className="bi bi-skip-start"></i></Button>{' '}
+          <Button variant="outline-success" onClick={this.play} disabled={!this.hasContent()}>{this.state.playing ? <i className="bi bi-stop"></i> : <i className="bi bi-play"></i>}</Button>{' '}
+          <Button variant="outline-success" onClick={this.skipEnd} disabled={!this.hasContent()}><i className="bi bi-skip-end"></i></Button>
+          <br />
         </div>
-        { this.modal() }
+        <br />
+        <div>
+          <Button variant="outline-success" onClick={this.showExport} disabled={!this.hasContent()}><i className="bi bi-box-arrow-down"></i></Button>{' '}
+          <Button variant="outline-success" onClick={this.showProjectManager}>Manage Projects</Button>
+        </div>
         { this.export() }
+        { this.projectManager() }
       </div>
     );
   };

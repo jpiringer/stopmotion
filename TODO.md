@@ -2,25 +2,18 @@
 
 project
 
-- name
-- new
-- select project
-- delete project
+- save projects
+- load projects
 - autoreload last project
 - export project
 - import project
 - backup all projects
 
-state persistence at reload:
-
-- frames?
-- projects
-
-settings icon in the upper left corner
-
 export video
 
 - make it better: accurate timing
+
+remove camera wait after play
 
 ## DONE
 
@@ -76,3 +69,21 @@ export video
 
 - as mpeg
 - size?
+
+settings icon in the upper left corner
+
+- new
+
+- select project
+
+- name
+
+- delete project
+
+manage projects
+
+
+if deleted last project a new one should be created
+
+settings to/from project
+
