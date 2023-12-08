@@ -1,5 +1,5 @@
 import Webcam from "react-webcam"
-import React, { Component, MouseEventHandler, MouseEvent, ChangeEvent } from 'react'
+import React, { Component, MouseEvent, ChangeEvent } from 'react'
 import { Alert, Col, Form, ListGroup } from 'react-bootstrap'
 import { createGIF } from 'gifshot'
 
@@ -197,14 +197,13 @@ export class SnapCam extends Component<SnapProps, SnapState> {
   }
 
   rotate(base64str: string, angle: number, func: (src: string) => void) {
-    console.log("base64: "+base64str);
-    //const buf = Buffer.from(base64str, 'base64');
-    Jimp.read(base64str).then((image) => {
-      console.log("image: "+image)
-      image.rotate(angle, function(err) {
-        if (err) throw err;
+    Jimp.read(base64str).then((image: JimpType) => {
+      image.rotate(angle, function(err: Error) {
+        if (err) {
+          throw err;
+        }
       })
-      .getBase64(Jimp.MIME_JPEG, function (err, src: string) {
+      .getBase64(Jimp.MIME_JPEG, function (err: Error, src: string) {
         func(src);
       });
     })  
@@ -560,7 +559,7 @@ export class SnapCam extends Component<SnapProps, SnapState> {
                   </div>
                 </Alert>
                 :
-                <ListGroup.Item as="li" action active={this.state.selectedProjectNr === index} onClick={() => {this.setState({selectedProjectNr: index})}} onDoubleClick={() => {this.openProject()}}>
+                <ListGroup.Item as="li" key={index} action active={this.state.selectedProjectNr === index} onClick={() => {this.setState({selectedProjectNr: index})}} onDoubleClick={() => {this.openProject()}}>
                   {project.getTitle()} <button className="inline-project-button" onClick={this.showClearAlert}><i className="bi bi-trash3"></i></button>
                 </ListGroup.Item>);
             })

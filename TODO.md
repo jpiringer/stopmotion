@@ -1,5 +1,10 @@
 # TODO
 
+database
+https://medium.com/@kamresh485/indexeddb-tutorial-for-beginners-a-comprehensive-guide-with-coding-examples-74df2914d4d5
+https://blog.logrocket.com/using-indexeddb-complete-guide/
+https://web.dev/articles/indexeddb?hl=de
+
 project
 
 - save projects
