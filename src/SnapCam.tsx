@@ -39,6 +39,7 @@ interface SnapState {
   showClearAlert: boolean
   showSettings: boolean
   showExport: boolean
+  showInfo: boolean
   showProjectManager: boolean
   inputDevices: MediaDeviceInfo[]
   selectedDeviceID: string
@@ -137,6 +138,7 @@ export class SnapCam extends Component<SnapProps, SnapState> {
       progress: 0, 
       selectedFrameIndex: -1, 
       showClearAlert: true, showSettings: false, showExport: false, showProjectManager: false,
+      showInfo: false,
       inputDevices: [], 
       selectedDeviceID: this.getLocalStorage<string>("selectedDeviceID", ""),
       frameRate: frameRate, 
@@ -691,6 +693,26 @@ export class SnapCam extends Component<SnapProps, SnapState> {
     );
   }
 
+  info() {
+    return (
+      <Modal show={this.state.showInfo} onHide={() => {this.setState({showInfo: false})}} animation={true}>
+      <Modal.Header closeButton className="blackmodal" closeVariant="white">
+          <Modal.Title>Info</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="blackmodal">
+          <p>This is a cute stop motion app by jörg piringer</p>
+          <p>check out my website: <a href="https://joerg.piringer.net">https://joerg.piringer.net</a></p>
+          <p>or fork this app on github: <a href="https://github.com/jpiringer/stopmotion">https://github.com/jpiringer/stopmotion</a></p>
+        </Modal.Body>
+        <Modal.Footer className="blackmodal">
+          <Button variant="primary" onClick={() => {this.setState({showInfo: false})}}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    )
+  }
+
   drawFrame(context: CanvasRenderingContext2D, frameCount: number) {
     let imageSrc = this.getFrame(frameCount % this.getFrames().length);
     var image = new Image();
@@ -773,10 +795,12 @@ export class SnapCam extends Component<SnapProps, SnapState> {
         <br />
         <div>
           <Button variant="outline-success" onClick={this.showExport} disabled={!this.hasContent()}><i className="bi bi-box-arrow-down"></i></Button>{' '}
-          <Button variant="outline-success" onClick={this.showProjectManager}>Manage Projects</Button>
+          <Button variant="outline-success" onClick={this.showProjectManager}>Manage Projects</Button>{' '}
+          <Button variant="outline-success" onClick={() => {this.setState({showInfo: true})}} ><i className="bi bi-info-circle"></i></Button>
         </div>
         { this.export() }
         { this.projectManager() }
+        { this.info() }
       </div>
     );
   };

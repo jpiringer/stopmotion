@@ -17,6 +17,8 @@ export video
 
 remove camera wait after play
 
+favicon
+
 ## DONE
 
 capture frames
@@ -96,3 +98,9 @@ https://web.dev/articles/indexeddb?hl=de
 
 - save projects
 - load projects
+
+about dialog
+
+- github
+- link to website
+

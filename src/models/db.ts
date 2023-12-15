@@ -1,4 +1,7 @@
 // db.ts
+// uses dexie
+// https://dexie.org
+
 import Dexie, { Table } from 'dexie';
 import { Project } from "../Project"
 import ProjectItem from "./ProjectItem"
