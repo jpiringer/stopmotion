@@ -2,6 +2,8 @@
 
 import adjectives from "./Adjectives"
 import nouns from "./Nouns"
+import { db } from "./models/db"
+import ProjectItem from "./models/ProjectItem"
 
 export interface FrameSize {
   width: number
@@ -16,16 +18,15 @@ function generateTitle() {
 	return getRandomWord(adjectives)+" "+getRandomWord(nouns);
 }
 
-export class Project {
-	public id: string = crypto.randomUUID()
+export class Project implements ProjectItem {
+	public id: number = -1
 
-	protected title: string
-	protected frameRate: number
-	protected size: FrameSize
-	protected mirror: boolean
-  protected rotate: boolean
-
-	protected frames: string[] = []
+	title: string
+	frameRate: number
+	size: FrameSize
+	mirror: boolean
+  rotate: boolean
+	frameIds: number[] = []
 
 	protected updater: () => void
 
@@ -37,31 +38,35 @@ export class Project {
 		this.rotate = rotate
 
 		this.title = generateTitle()
+		this.frameIds = []
+
+		db.addProject(this).then((value: number) => {this.id = value}, (error) => {})
 	}
 
 	clone() {
 		var newProject = new Project(this.updater, this.frameRate, this.size, this.mirror, this.rotate)
 
+		newProject.id = this.id
 		newProject.title = this.title
-		newProject.frames = this.frames
+		//newProject.frames = this.frames
+		newProject.frameIds = this.frameIds
 		
 		return newProject
 	}
 
+	setUpdater(updater: () => void) {
+		this.updater = updater
+	}
+
 	updateState() {
+		db.updateProject(this)
 		this.updater()
 	}
 
-	store() {
+	// id
 
-	}
-
-	activate() {
-
-	}
-
-	deactivate() {
-
+	getId() {
+		return this.id
 	}
 
 	// title
@@ -120,30 +125,62 @@ export class Project {
 	// frames
 
 	hasContent() {
-		return this.frames.length > 0;
+		if (this.frameIds === undefined) {
+			return false
+		}
+		return this.frameIds.length > 0
 	}
 
 	getFrames() {
-		return this.frames
+		return [] //this.frames
 	}
 
 	getFrame(nr: number) {
-		return this.frames[nr]
+		return null //this.frames[nr]
+	}
+
+	addFrameId(frameId: number) {
+		if (this.frameIds === undefined) {
+			this.frameIds = []
+		}
+		this.frameIds.push(frameId)
 	}
 
 	addFrame(frame: string) {
-		this.frames.push(frame)
-		this.updateState()
+		db.addFrame(this, frame).then((frameId: number) => {
+			this.addFrameId(frameId)
+			this.updateState()
+		})	
+	}
+
+	async loadFrames() {
+		return db.getFrames(this)
+	}
+
+	deleteFrameWithId(frameId: number | undefined) {
+		if (frameId !== undefined) {
+			db.deleteFrame(frameId).then(() => {
+				this.updateState()
+			})
+		}
 	}
 
 	deleteLastFrame() {
-		this.frames = this.frames.slice(0, -1)
-		this.updateState()
+		let frameId = this.frameIds.pop()
+
+		this.deleteFrameWithId(frameId)
 	}
 
 	deleteFrame(nr: number) {
-		this.frames.splice(nr, 1);
-		this.updateState()
+		let frameId = this.frameIds[nr]
+
+		this.frameIds.splice(nr, 1)
+
+		this.deleteFrameWithId(frameId)
+	}
+
+	getFrameIds() {
+		return this.frameIds
 	}
 }
 
