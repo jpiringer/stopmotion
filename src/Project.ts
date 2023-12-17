@@ -25,12 +25,12 @@ export class Project implements ProjectItem {
 	frameRate: number
 	size: FrameSize
 	mirror: boolean
-  rotate: boolean
+  rotate: number
 	frameIds: number[] = []
 
 	protected updater: () => void
 
-	constructor(updater: () => void, frameRate: number, size: FrameSize, mirror: boolean, rotate: boolean) {
+	constructor(updater: () => void, frameRate: number, size: FrameSize, mirror: boolean, rotate: number) {
 		this.updater = updater
 		this.frameRate = frameRate
 		this.size = size
@@ -113,7 +113,7 @@ export class Project implements ProjectItem {
 		return this.mirror
 	}
 
-	setRotate(rotate: boolean) {
+	setRotate(rotate: number) {
 		this.rotate = rotate
 		this.updateState()
 	}

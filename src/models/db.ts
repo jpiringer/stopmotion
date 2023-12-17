@@ -12,7 +12,7 @@ export class StopMotionDB extends Dexie {
   frames!: Table<FrameItem, number>;
 
   populate() {
-    new Project(() => {}, 10, {width: 1920, height: 1080}, false, false)
+    new Project(() => {}, 10, {width: 1920, height: 1080}, false, 0)
   }
 
   constructor() {

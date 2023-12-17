@@ -20,18 +20,22 @@ import exportVideo from "./exportVideo"
 import { Jimp as JimpType, JimpConstructors } from '@jimp/core'
 import 'jimp'
 
-declare const Jimp: JimpType & JimpConstructors;
+declare const Jimp: JimpType & JimpConstructors
 
-const camFactor = 0.3;
+const camFactor = 0.3
 
-const possibleFrameRates = [10, 15, 30];
+const possibleFrameRates = [10, 15, 30]
 
-type ExportType = "Video" | "GIF";
+const possibleRotations = [0, 90, 180 , 270]
+
+type ExportType = "Video" | "GIF"
 
 const possibleSizes = [
   {width: 1920, height: 1080},
-  {width: 1280, height: 720}
-];
+  {width: 1280, height: 720},
+  {width: 1080, height: 1920},
+  {width: 720, height: 1080}
+]
 
 interface SnapState {
   progress: number
@@ -46,7 +50,7 @@ interface SnapState {
   frameRate: number
   sizeIndex: number
   mirror: boolean
-  rotate: boolean
+  rotate: number
   exportType: ExportType
   exportFileName: string
   playing: boolean
@@ -122,8 +126,7 @@ export class SnapCam extends Component<SnapProps, SnapState> {
 
     let frameRate = this.getLocalStorage<number>("frameRate", possibleFrameRates[1])
     let mirror = this.getLocalStorage<boolean>("mirror", false)
-    let rotate = this.getLocalStorage<boolean>("rotate", false)
-    let size = possibleSizes[sizeIndex]
+    let rotate = this.getLocalStorage<number>("rotate", 0)
 
     db.getProjectCount().then((count: number) => {
       if (count <= 0) {
@@ -152,12 +155,13 @@ export class SnapCam extends Component<SnapProps, SnapState> {
       frames: []
     };
 
-    this.snap = this.snap.bind(this);
-    this.doExport = this.doExport.bind(this);
-    this.showExport = this.showExport.bind(this);
-    this.hideExport = this.hideExport.bind(this);
-    this.deleteLast = this.deleteLast.bind(this);
-    this.deleteSelected = this.deleteSelected.bind(this);
+    this.snap = this.snap.bind(this)
+    this.doExport = this.doExport.bind(this)
+    this.showExport = this.showExport.bind(this)
+    this.hideExport = this.hideExport.bind(this)
+    this.deleteLast = this.deleteLast.bind(this)
+    this.deleteSelected = this.deleteSelected.bind(this)
+    this.duplicateSelected = this.duplicateSelected.bind(this)
     this.clear = this.clear.bind(this);
     this.keyDown = this.keyDown.bind(this);
     this.play = this.play.bind(this);
@@ -170,7 +174,7 @@ export class SnapCam extends Component<SnapProps, SnapState> {
     this.handleCloseSettings = this.handleCloseSettings.bind(this);
     this.changeSize = this.changeSize.bind(this);
     this.changeMirror = this.changeMirror.bind(this);
-    this.changeRotate = this.changeRotate.bind(this);
+    this.changeRotation = this.changeRotation.bind(this);
     this.onExportTypeChange = this.onExportTypeChange.bind(this);
     this.onExportFileNameChange = this.onExportFileNameChange.bind(this);
     this.drawFrame = this.drawFrame.bind(this);
@@ -254,7 +258,7 @@ export class SnapCam extends Component<SnapProps, SnapState> {
 
       if (captured !== null) {
         if (this.getCurrentProject()!.getRotate()) {
-          this.rotate(captured, 180, storeImage);
+          this.rotate(captured, this.getCurrentProject()!.getRotate(), storeImage);
         }
         else {
           storeImage(captured);
@@ -304,41 +308,41 @@ export class SnapCam extends Component<SnapProps, SnapState> {
 
   doExport() {
     if (this.state.exportType === "GIF") {
-      this.exportGIF(this.state.exportFileName);
+      this.exportGIF(this.state.exportFileName)
     }
     else {
-      this.exportVideo(this.state.exportFileName);
+      this.exportVideo(this.state.exportFileName)
     }
   }
 
   deselectFrame() {
-    this.setState({selectedFrameIndex: -1});
+    this.setState({selectedFrameIndex: -1})
   }
 
   isSelected() {
-    return this.state.selectedFrameIndex >= 0;
+    return this.state.selectedFrameIndex >= 0
   }
 
   selectFrame = (index: number) => (event: MouseEvent<HTMLImageElement>) => {  
     if (this.state.selectedFrameIndex === index) {
-      this.deselectFrame();
+      this.deselectFrame()
     }
     else {
-      this.setState({selectedFrameIndex: index});
+      this.setState({selectedFrameIndex: index})
     }
   }
 
   changeSelected(inc: number) {
     if (this.hasContent()) {
-      let newIndex = this.isSelected() ? this.state.selectedFrameIndex + inc : this.getFrames().length-1;
+      let newIndex = this.isSelected() ? this.state.selectedFrameIndex + inc : this.getFrames().length-1
 
       if (newIndex < 0) {
-        newIndex = 0;
+        newIndex = 0
       }
       if (newIndex >= this.getFrames().length) {
-        newIndex = this.getFrames().length-1;
+        newIndex = this.getFrames().length-1
       }
-      this.setState({selectedFrameIndex: newIndex});
+      this.setState({selectedFrameIndex: newIndex})
     }
   }
 
@@ -348,8 +352,8 @@ export class SnapCam extends Component<SnapProps, SnapState> {
 
       frames.pop()
       this.setState({frames: frames})
-      this.getCurrentProject()!.deleteLastFrame();
-      this.deselectFrame();
+      this.getCurrentProject()!.deleteLastFrame()
+      this.deselectFrame()
     }
   }
 
@@ -359,8 +363,20 @@ export class SnapCam extends Component<SnapProps, SnapState> {
    		frames.splice(this.state.selectedFrameIndex, 1)
 
       this.setState({frames: frames})
-      this.getCurrentProject()!.deleteFrame(this.state.selectedFrameIndex);
+      this.getCurrentProject()!.deleteFrame(this.state.selectedFrameIndex)
       this.deselectFrame();
+    }
+  }
+
+  duplicateSelected() {
+    if (this.getCurrentProject() !== undefined) {
+      let frames = this.state.frames
+      let frame = frames[this.state.selectedFrameIndex]
+
+      frames.push(frame)
+
+      this.setState({frames: frames})
+      this.getCurrentProject()!.addFrame(frame)
     }
   }
 
@@ -523,14 +539,27 @@ export class SnapCam extends Component<SnapProps, SnapState> {
     this.setState({mirror: newValue});
   }
 
-  changeRotate() {
-    let newValue = !this.state.rotate;
+  changeRotation(event: ChangeEvent<HTMLSelectElement>) {
+    let rotation = parseInt(event.target.value)
+
     if (this.getCurrentProject() !== undefined) {
-      this.getCurrentProject()!.setRotate(newValue)
+      this.getCurrentProject()!.setRotate(rotation)
     }
-    this.setLocalStorage("rotate", newValue);
-    this.setState({rotate: newValue});
+    this.setLocalStorage("rotate", rotation);
+    this.setState({rotate: rotation});
   }
+
+  rotationSelector() {
+    return (
+      <Form.Select aria-label="select rotation" value={this.getCurrentProject()!.getRotate()} onChange={this.changeRotation}>
+        {possibleRotations.map((rotation: number) => {
+          return <option value={rotation} key={rotation}>{rotation}°</option>
+        })}
+      </Form.Select>
+    );
+  }
+
+
 
   onProjectNameChange(event: ChangeEvent<HTMLInputElement>) {
     if (this.getCurrentProject() !== undefined) {
@@ -557,9 +586,10 @@ export class SnapCam extends Component<SnapProps, SnapState> {
         { this.frameRateSelector() }
         Size:
         { this.sizeSelector() }
-
+        Rotation:
+        { this.rotationSelector() }
         <Form.Check type="checkbox" id="mirror" label="Mirror" checked={this.getCurrentProject()!.getMirror()} onChange={this.changeMirror}/>
-        <Form.Check type="checkbox" id="rotate" label="Rotate 180°" checked={this.getCurrentProject()!.getRotate()} onChange={this.changeRotate} />
+        {/*<Form.Check type="checkbox" id="rotate" label="Rotate 180°" checked={this.getCurrentProject()!.getRotate()} onChange={this.changeRotate} />*/}
 
       </Offcanvas.Body>
     </Offcanvas>
@@ -583,29 +613,6 @@ export class SnapCam extends Component<SnapProps, SnapState> {
 
     db.deleteProject(id)
   }
-
-  /*projectList() {
-    return projects.map((projectItem: ProjectItem, index: number) => {
-                let project = projectItem as Project
-
-                return ((this.state.showClearAlert && this.state.selectedProjectNr === index) ?
-                  <Alert show variant="danger">
-                    <Alert.Heading>Delete Project "{project.getTitle()}"?</Alert.Heading>
-                    <p>
-                    Do you really want to delete the project "{project.getTitle()}"? This cannot be undone!
-                    </p>
-                    <hr />
-                    <div className="d-flex justify-content-end">
-                    <Button onClick={() => {this.deleteProject(index)}} variant="outline-danger">Delete Permanently</Button>{' '}
-                    <Button onClick={this.hideClearAlert} variant="outline-success">Cancel</Button>
-                    </div>
-                  </Alert>
-                  :
-                  <ListGroup.Item as="li" key={index} action active={this.state.selectedProjectNr === index} onClick={() => {this.setState({selectedProjectNr: index})}} onDoubleClick={() => {this.openProject()}}>
-                    {project.getTitle()} <button className="inline-project-button" onClick={this.showClearAlert}><i className="bi bi-trash3"></i></button>
-                  </ListGroup.Item>);
-              })
-  }*/
 
   projectManager() {
     return (
@@ -727,7 +734,8 @@ export class SnapCam extends Component<SnapProps, SnapState> {
         width={this.getCurrentProject()!.getSize().width*camFactor} 
         height={this.getCurrentProject()!.getSize().height*camFactor} 
         draw={this.drawFrame} 
-        frameRate={this.getCurrentProject()!.getFramerate()} />
+        frameRate={this.getCurrentProject()!.getFramerate()} 
+      />
       :
       <Webcam 
         mirrored={this.getCurrentProject()!.getMirror()} 
@@ -736,7 +744,7 @@ export class SnapCam extends Component<SnapProps, SnapState> {
         screenshotFormat="image/jpeg" 
         videoConstraints={ {deviceId: this.state.selectedDeviceID, width: this.getCurrentProject()!.getSize().width, height: this.getCurrentProject()!.getSize().height} } 
         ref={this.camRef} 
-        style={this.getCurrentProject()!.getRotate() ? {transform: "rotate(180deg)"} : {}}
+        style={{transform: "rotate("+this.getCurrentProject()!.getRotate()+"deg)"}}
         />
     );
   }
@@ -756,7 +764,8 @@ export class SnapCam extends Component<SnapProps, SnapState> {
           { this.getCurrentProject() !== undefined && <>
             <Button variant="outline-primary" onClick={this.snap}><i className="bi bi-camera"></i></Button>{' '}
             <Button variant="outline-danger" onClick={this.deleteLast} disabled={!this.hasContent()}><i className="bi bi-backspace"></i></Button>{' '}
-            <Button variant="outline-danger" onClick={this.deleteSelected} disabled={!this.isSelected()}>Delete Selected</Button>
+            <Button variant="outline-danger" onClick={this.deleteSelected} disabled={!this.isSelected()}>Delete Selected</Button>{' '}
+            <Button variant="outline-primary" onClick={this.duplicateSelected} disabled={!this.isSelected()}><i className="bi bi-copy"></i></Button>
           </> }
           <br />
         </div>

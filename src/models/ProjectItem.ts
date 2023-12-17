@@ -6,7 +6,7 @@ export default interface ProjectItem {
 	frameRate: number
 	size: FrameSize
 	mirror: boolean
-  rotate: boolean
+  rotate: number
 
 	frameIds: number[]
 }

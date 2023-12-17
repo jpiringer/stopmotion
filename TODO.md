@@ -14,10 +14,15 @@ project
 export video
 
 - make it better: accurate timing
+- export pictures
 
 remove camera wait after play
 
 favicon
+
+responsive for phone
+
+rotate 90° & 270° doesnt work right
 
 ## DONE
 
@@ -104,3 +109,4 @@ about dialog
 - github
 - link to website
 
+hochkant video?
