@@ -182,6 +182,21 @@ export class Project implements ProjectItem {
 	getFrameIds() {
 		return this.frameIds
 	}
+
+	exportToJSON(frames: string[]) {
+		var json = {
+			title: this.title,
+			frameRate: this.frameRate,
+			size: this.size,
+			mirror: this.mirror,
+  		rotate: this.rotate,
+			frames: frames
+		}
+
+		let stringified = JSON.stringify(json)
+
+		return stringified
+	}
 }
 
 export default Project;

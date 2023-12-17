@@ -1,4 +1,4 @@
-const exportVideo = (images: string[], frameRate: number, width: number, height: number, progressCallBack: (e: number) => void) => {
+const exportVideo = (fileName: string, images: string[], frameRate: number, width: number, height: number, progressCallBack: (e: number) => void) => {
     var canvas = document.createElement('canvas');
     canvas.setAttribute("width", width.toString());
     canvas.setAttribute("height", height.toString());
@@ -38,7 +38,7 @@ const exportVideo = (images: string[], frameRate: number, width: number, height:
             // <a href="..." download>
             var link = document.createElement('a');
             link.setAttribute('href', URL.createObjectURL(blob));
-            link.setAttribute('download', 'video.mp4');
+            link.setAttribute('download', fileName+'.mp4');
 
             // NOTE: We need to add temporarily the link to the DOM so
             //       we can trigger a 'click' on it.

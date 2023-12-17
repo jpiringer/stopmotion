@@ -7,7 +7,6 @@ feedback that the project is still loading the frames
 project
 
 - autoreload last project
-- export project
 - import project
 - backup all projects
 
@@ -110,3 +109,5 @@ about dialog
 - link to website
 
 hochkant video?
+
+- export project

@@ -28,7 +28,7 @@ const possibleFrameRates = [10, 15, 30]
 
 const possibleRotations = [0, 90, 180 , 270]
 
-type ExportType = "Video" | "GIF"
+type ExportType = "Video" | "GIF" | "JSON"
 
 const possibleSizes = [
   {width: 1920, height: 1080},
@@ -52,7 +52,6 @@ interface SnapState {
   mirror: boolean
   rotate: number
   exportType: ExportType
-  exportFileName: string
   playing: boolean
   selectedProjectNr: number
   currentProject?: Project
@@ -149,7 +148,6 @@ export class SnapCam extends Component<SnapProps, SnapState> {
       mirror: mirror,
       rotate: rotate,
       exportType: "GIF",
-      exportFileName: "export",
       selectedProjectNr: -1,
       currentProject: undefined,
       frames: []
@@ -176,7 +174,6 @@ export class SnapCam extends Component<SnapProps, SnapState> {
     this.changeMirror = this.changeMirror.bind(this);
     this.changeRotation = this.changeRotation.bind(this);
     this.onExportTypeChange = this.onExportTypeChange.bind(this);
-    this.onExportFileNameChange = this.onExportFileNameChange.bind(this);
     this.drawFrame = this.drawFrame.bind(this);
     this.handleBeforeUnload = this.handleBeforeUnload.bind(this);
     this.makeNewProject = this.makeNewProject.bind(this);
@@ -300,18 +297,33 @@ export class SnapCam extends Component<SnapProps, SnapState> {
     });
   }
 
+  exportJSON(fileName: string) {
+    let jsonString = this.getCurrentProject()!.exportToJSON(this.state.frames)
+
+    const file = new Blob([jsonString], { type: 'text/plain' })
+    const link = document.createElement('a')
+    link.download = fileName+".json"
+    link.href = URL.createObjectURL(file)
+    link.click()
+    this.setProgress(0)
+    URL.revokeObjectURL(link.href)
+  }
+
   exportVideo(fileName: string) {
     if (this.getCurrentProject() !== undefined) {
-      exportVideo(this.getFrames(), this.getCurrentProject()!.getFramerate(), this.getCurrentProject()!.getSize().width, this.getCurrentProject()!.getSize().height, (e: number) => this.setProgress(e * 100));
+      exportVideo(fileName, this.getFrames(), this.getCurrentProject()!.getFramerate(), this.getCurrentProject()!.getSize().width, this.getCurrentProject()!.getSize().height, (e: number) => this.setProgress(e * 100));
     }
   }
 
   doExport() {
     if (this.state.exportType === "GIF") {
-      this.exportGIF(this.state.exportFileName)
+      this.exportGIF(this.getCurrentProject()!.getTitle())
+    }
+    else if (this.state.exportType === "JSON") {
+      this.exportJSON(this.getCurrentProject()!.getTitle())
     }
     else {
-      this.exportVideo(this.state.exportFileName)
+      this.exportVideo(this.getCurrentProject()!.getTitle())
     }
   }
 
@@ -663,10 +675,6 @@ export class SnapCam extends Component<SnapProps, SnapState> {
     this.setState({exportType: event.target.value as ExportType});
   }
 
-  onExportFileNameChange(event: ChangeEvent<HTMLInputElement>) {
-    this.setState({exportFileName: event.target.value});
-  }
-
   export() {
     return (
       <Modal show={this.state.showExport} onHide={this.hideExport} animation={true}>
@@ -675,13 +683,10 @@ export class SnapCam extends Component<SnapProps, SnapState> {
         </Modal.Header>
         <Modal.Body className="blackmodal">
           <Form>
-            <Form.Group className="mb-3" controlId="exampleForm.ControlInput1">
-              <Form.Label>File name</Form.Label>
-              <Form.Control type="input" placeholder="export" value={this.state.exportFileName} onChange={this.onExportFileNameChange}/>
-            </Form.Group>
             <div className="mb-3">
               <Form.Check inline label="Video" value="Video" name="group1" type="radio" checked={this.state.exportType === "Video"} onChange={this.onExportTypeChange} id="video" />
               <Form.Check inline label="GIF" value="GIF" name="group1" type="radio" checked={this.state.exportType === "GIF"} onChange={this.onExportTypeChange} id="gif" />
+              <Form.Check inline label="JSON" value="JSON" name="group1" type="radio" checked={this.state.exportType === "JSON"} onChange={this.onExportTypeChange} id="json" />
             </div>
           </Form>
           
