@@ -1,6 +1,6 @@
 import Webcam from "react-webcam"
 import React, { Component, MouseEvent, ChangeEvent } from 'react'
-import { Col, Form, ListGroup } from 'react-bootstrap'
+import { Col, Form } from 'react-bootstrap'
 import { createGIF } from 'gifshot'
 
 import Button from 'react-bootstrap/Button'
@@ -632,14 +632,12 @@ export class SnapCam extends Component<SnapProps, SnapState> {
         <Modal.Header closeButton className="blackmodal" closeVariant="white">
           <Modal.Title>Project Manager</Modal.Title>
         </Modal.Header>
-        <ListGroup as="ul">
-          <ProjectList 
-            selected={this.state.selectedProjectNr} 
-            onSelect={(index: number) => {this.setState({selectedProjectNr: index})}}
-            onOpen={() => {this.openProject()}}
-            onDelete={(index: number) => {this.deleteProject(index)}}
-          />
-        </ListGroup>
+        <ProjectList 
+          selected={this.state.selectedProjectNr} 
+          onSelect={(index: number) => {this.setState({selectedProjectNr: index})}}
+          onOpen={() => {this.openProject()}}
+          onDelete={(index: number) => {this.deleteProject(index)}}
+        />
         
         <Modal.Footer className="blackmodal">
             <Col>
@@ -815,6 +813,10 @@ export class SnapCam extends Component<SnapProps, SnapState> {
         { this.export() }
         { this.projectManager() }
         { this.info() }
+
+        <div>
+          <p>this is a project by <a href="https://joerg.piringer.net/">jörg piringer</a></p>
+        </div>
       </div>
     );
   };

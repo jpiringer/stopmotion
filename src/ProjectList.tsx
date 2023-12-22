@@ -2,22 +2,31 @@ import * as React from "react"
 import {useState} from "react"
 import { Alert, ListGroup } from 'react-bootstrap'
 import Button from 'react-bootstrap/Button'
-import Modal from 'react-bootstrap/Modal'
 import { useLiveQuery } from "dexie-react-hooks"
 import { db } from "./models/db"
 import ProjectItem from "./models/ProjectItem"
-import { Project, FrameSize } from "./Project"
 
-export function ProjectList({selected, onSelect, onOpen, onDelete}) {
+type ProjectListProps = {
+  selected: number 
+	onSelect: (index: number) => void
+	onOpen: (index: number) => void
+	onDelete: (id: number) => void
+}
+
+export function ProjectList({selected, onSelect, onOpen, onDelete}: ProjectListProps) {
 	const projects = useLiveQuery(() => db.getProjects())
 	const [showClearAlert, setShowClearAlert] = useState(false)
 
 	if (!projects) {
-		return null
+		return (        
+			<ListGroup as="ul">
+			</ListGroup>
+		)
 	}
 
 	return (
-		projects.map((projectItem: ProjectItem, index: number) => {
+		<ListGroup as="ul">
+		{projects.map((projectItem: ProjectItem, index: number) => {
 			return (
 				(showClearAlert && selected === index) ?
 				 <Alert show key={-1} variant="danger">
@@ -29,7 +38,7 @@ export function ProjectList({selected, onSelect, onOpen, onDelete}) {
             </p>
             <hr />
             <div className="d-flex justify-content-end">
-              <Button onClick={() => {onDelete(projectItem.id); setShowClearAlert(false)}} variant="outline-danger">Delete Permanently</Button>{' '}
+              <Button onClick={() => {onDelete(projectItem.id!); setShowClearAlert(false)}} variant="outline-danger">Delete Permanently</Button>{' '}
               <Button onClick={() => {setShowClearAlert(false)}} variant="outline-success">Cancel</Button>
             </div>
           </Alert>
@@ -46,6 +55,7 @@ export function ProjectList({selected, onSelect, onOpen, onDelete}) {
 							<i className="bi bi-trash3"></i>
 						</button>
 					</ListGroup.Item>)
-		})
+		})}
+		</ListGroup>
 	)
 }

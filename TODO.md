@@ -1,5 +1,8 @@
 # TODO
 
+better export on raspi400
+enter key does open project manager on raspi400
+
 feedback that the project is still loading the frames
 
 - spinner
